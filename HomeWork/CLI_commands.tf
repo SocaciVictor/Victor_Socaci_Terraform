@@ -91,4 +91,32 @@ resource "null_resource" "run_container_from_acr" {
   }
 }
 
+resource "null_resource" "docker_on_second_vm2" {
+  count = 1
+
+   connection {
+    type     = "ssh"
+    host     = azurerm_public_ip.public_ip[var.vm_count - 2].ip_address
+    user     = "adminuser"
+    password = random_password.password[var.vm_count - 2].result
+    timeout  = "5m"
+  }
+
+  provisioner "remote-exec" {
+    inline = [ 
+   "sudo apt-get update -y",
+      "sudo apt-get install -y docker.io",
+      "sudo systemctl start docker",
+      "sudo docker login ${azurerm_container_registry.acr.login_server} -u ${nonsensitive(azurerm_container_registry.acr.admin_username)} -p ${nonsensitive(azurerm_container_registry.acr.admin_password)}",
+      "sudo docker pull ${azurerm_container_registry.acr.login_server}/nginx:latest",
+      "sudo docker run -d -p 80:80 ${azurerm_container_registry.acr.login_server}/nginx:latest",
+      "sudo docker ps"
+    ]
+  }
+
+
+  
+}
+
+
 
